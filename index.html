@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Dominio y Rango con Gráfica</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
+  label, input, button { display: block; margin: 10px 0; }
+  #result { margin-top: 20px; font-weight: bold; }
+  canvas { background: white; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<h2>Calculadora de Dominio y Rango (Funciones Lineales y Cuadráticas)</h2>
+<form id="funcForm">
+  <label>Tipo de función:
+    <select id="tipoFunc">
+      <option value="lineal">Lineal (y = mx + b)</option>
+      <option value="cuadratica">Cuadrática (y = ax² + bx + c)</option>
+    </select>
+  </label>
+  <label>Coeficiente a (para cuadrática, o pendiente m para lineal): <input type="number" id="a" value="1" step="any" required></label>
+  <label>Coeficiente b: <input type="number" id="b" value="0" step="any" required></label>
+  <label>Coeficiente c (solo para cuadrática): <input type="number" id="c" value="0" step="any"></label>
+  <label>Rango de x (mínimo): <input type="number" id="xMin" value="-10" step="any" required></label>
+  <label>Rango de x (máximo): <input type="number" id="xMax" value="10" step="any" required></label>
+  <button type="submit">Calcular y Graficar</button>
+</form>
+
+<div id="result"></div>
+<canvas id="grafica" width="600" height="400"></canvas>
+
+<script>
+const form = document.getElementById('funcForm');
+const ctx = document.getElementById('grafica').getContext('2d');
+let chart;
+
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const tipo = document.getElementById('tipoFunc').value;
+  const a = parseFloat(document.getElementById('a').value);
+  const b = parseFloat(document.getElementById('b').value);
+  const c = parseFloat(document.getElementById('c').value);
+  const xMin = parseFloat(document.getElementById('xMin').value);
+  const xMax = parseFloat(document.getElementById('xMax').value);
+
+  if (xMax <= xMin) {
+    alert('El valor máximo de x debe ser mayor que el mínimo.');
+    return;
+  }
+
+  // Generar valores de x y y
+  const xVals = [];
+  const yVals = [];
+  const step = (xMax - xMin) / 200;
+  for(let x = xMin; x <= xMax; x += step) {
+    xVals.push(x.toFixed(2));
+    let y;
+    if (tipo === 'lineal') {
+      y = a * x + b;
+    } else {
+      y = a * x * x + b * x + c;
+    }
+    yVals.push(y);
+  }
+
+  // Calcular dominio y rango
+  const dominio = `Dominio: [${xMin}, ${xMax}]`;
+  const yMin = Math.min(...yVals);
+  const yMax = Math.max(...yVals);
+  const rango = `Rango aproximado: [${yMin.toFixed(2)}, ${yMax.toFixed(2)}]`;
+
+  document.getElementById('result').innerHTML = `${dominio}<br>${rango}`;
+
+  // Graficar con Chart.js
+  if(chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: xVals,
+      datasets: [{
+        label: 'y',
+        data: yVals,
+        borderColor: 'blue',
+        borderWidth: 2,
+        fill: false,
+        pointRadius: 0,
+        tension: 0.2
+      }]
+    },
+    options: {
+      responsive: false,
+      scales: {
+        x: {
+          title: { display: true, text: 'x' }
+        },
+        y: {
+          title: { display: true, text: 'y' }
+        }
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
