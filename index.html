@@ -1,209 +1,221 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora Dominio, Rango y Gráfica - Versión Simple</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calculadora Interactiva de Funciones</title>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Plotly y math.js -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@12.4.1/lib/browser/math.min.js"></script>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 2em;
-      background: #fff;
-      color: #222;
-    }
-    label, input, button {
-      display: block;
-      margin-top: 1em;
-      max-width: 300px;
-      width: 100%;
-    }
-    button {
-      margin-top: 1.5em;
-      padding: 0.5em;
-      font-size: 1.1em;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    #resultado {
-      margin-top: 2em;
-      padding: 1em;
-      background: #f9f9f9;
-      border-radius: 6px;
-      max-width: 600px;
-    }
-    #graficaContainer {
-      margin-top: 2em;
-      max-width: 700px;
-    }
-  </style>
+<style>
+  body {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: #f0f0f0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 30px;
+    margin: 0;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 0.3em;
+    font-weight: 700;
+    text-shadow: 2px 2px 6px #0008;
+  }
+  .contenedor {
+    max-width: 700px;
+    margin: 0 auto;
+    background: #0b2345cc;
+    padding: 25px 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px #0008;
+  }
+  label {
+    display: block;
+    margin-top: 1.2em;
+    font-weight: 600;
+    font-size: 1.1em;
+  }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 1em;
+    border-radius: 8px;
+    border: none;
+    margin-top: 6px;
+    box-sizing: border-box;
+    outline: none;
+    transition: box-shadow 0.3s ease;
+  }
+  input[type="text"]:focus, input[type="number"]:focus {
+    box-shadow: 0 0 8px 2px #4ac1ff;
+    background-color: #143d7a;
+    color: #e0f0ff;
+  }
+  button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #0b2345;
+    background: #4ac1ff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: #1e90ff;
+    color: #fff;
+  }
+  #mensaje {
+    margin-top: 20px;
+    font-size: 1.15em;
+    font-weight: 600;
+    text-align: center;
+    min-height: 2em;
+  }
+  #grafica {
+    margin-top: 30px;
+    border-radius: 12px;
+    background: #142a4a;
+    padding: 10px;
+  }
+</style>
 </head>
 <body>
 
-  <h1>Calculadora Dominio, Rango y Gráfica</h1>
+<div class="contenedor">
+  <h1>Calculadora Interactiva de Funciones</h1>
 
-  <label for="funcion">Función f(x):</label>
-  <input type="text" id="funcion" placeholder="Ejemplo: sin(x), x^2, 1/(x-2)" />
+  <label for="funcion">Ingresa la función f(x):</label>
+  <input type="text" id="funcion" placeholder="Ejemplo: sin(x), x^3 - 2*x + 1" value="sin(x) + 0.5*x" />
 
-  <label for="a">Punto a (inicio intervalo):</label>
-  <input type="number" id="a" placeholder="Ejemplo: -5" />
+  <label for="a">Intervalo desde (a):</label>
+  <input type="number" id="a" placeholder="Ejemplo: -10" value="-10" />
 
-  <label for="b">Punto b (fin intervalo):</label>
-  <input type="number" id="b" placeholder="Ejemplo: 5" />
+  <label for="b">Intervalo hasta (b):</label>
+  <input type="number" id="b" placeholder="Ejemplo: 10" value="10" />
 
-  <button onclick="calcular()">Calcular y Graficar</button>
+  <button onclick="graficarFuncion()">Graficar y Calcular</button>
 
-  <div id="resultado"></div>
+  <div id="mensaje"></div>
+  <div id="grafica"></div>
+</div>
 
-  <div id="graficaContainer">
-    <canvas id="grafica"></canvas>
-  </div>
+<script>
+  function graficarFuncion() {
+    const exprStr = document.getElementById('funcion').value.trim();
+    const a = parseFloat(document.getElementById('a').value);
+    const b = parseFloat(document.getElementById('b').value);
+    const mensajeDiv = document.getElementById('mensaje');
+    const graficaDiv = document.getElementById('grafica');
 
-  <script>
-    let chart = null;
+    mensajeDiv.textContent = '';
+    graficaDiv.innerHTML = '';
 
-    function calcular() {
-      const resultadoDiv = document.getElementById('resultado');
-      resultadoDiv.innerHTML = '';
-      const funcInput = document.getElementById('funcion').value.trim();
-      const a = parseFloat(document.getElementById('a').value);
-      const b = parseFloat(document.getElementById('b').value);
-
-      if (!funcInput) {
-        resultadoDiv.innerHTML = '<p style="color:red;">Por favor ingresa una función.</p>';
-        return;
-      }
-      if (isNaN(a) || isNaN(b)) {
-        resultadoDiv.innerHTML = '<p style="color:red;">Ingresa valores numéricos válidos para a y b.</p>';
-        return;
-      }
-      if (a >= b) {
-        resultadoDiv.innerHTML = '<p style="color:red;">El valor de a debe ser menor que b.</p>';
-        return;
-      }
-
-      // Reemplazar ^ por ** para math.js
-      const exprStr = funcInput.replace(/\^/g, '**');
-
-      let expr;
-      try {
-        expr = math.parse(exprStr);
-      } catch (error) {
-        resultadoDiv.innerHTML = `<p style="color:red;">Error en la función: ${error.message}</p>`;
-        return;
-      }
-
-      let f;
-      try {
-        f = expr.compile();
-      } catch (error) {
-        resultadoDiv.innerHTML = `<p style="color:red;">No se pudo compilar la función: ${error.message}</p>`;
-        return;
-      }
-
-      const pasos = 500;
-      const paso = (b - a) / pasos;
-      const xs = [];
-      const ys = [];
-      const puntosNoDefinidos = [];
-
-      for (let i = 0; i <= pasos; i++) {
-        const x = a + i * paso;
-        let y;
-        try {
-          y = f.evaluate({ x });
-          if (typeof y !== 'number' || !isFinite(y)) {
-            puntosNoDefinidos.push(x);
-            continue;
-          }
-          xs.push(x);
-          ys.push(y);
-        } catch {
-          puntosNoDefinidos.push(x);
-        }
-      }
-
-      if (ys.length === 0) {
-        resultadoDiv.innerHTML = '<p style="color:red;">La función no está definida en ningún punto del intervalo.</p>';
-        if(chart) {
-          chart.destroy();
-          chart = null;
-        }
-        return;
-      }
-
-      // Dominio aproximado
-      let dominioTexto = puntosNoDefinidos.length === 0
-        ? `[${a}, ${b}]`
-        : `Intervalo [${a}, ${b}] excluyendo puntos no definidos:<br>${puntosNoDefinidos.map(x => x.toFixed(3)).join(', ')}`;
-
-      // Rango aproximado
-      const minY = Math.min(...ys);
-      const maxY = Math.max(...ys);
-
-      resultadoDiv.innerHTML = `
-        <h2>Resultados</h2>
-        <p><strong>Dominio aproximado:</strong> ${dominioTexto}</p>
-        <p><strong>Rango aproximado:</strong> [${minY.toFixed(4)}, ${maxY.toFixed(4)}]</p>
-      `;
-
-      // Graficar con Chart.js
-      if(chart) chart.destroy();
-
-      const ctx = document.getElementById('grafica').getContext('2d');
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: xs,
-          datasets: [{
-            label: `f(x) = ${funcInput}`,
-            data: ys,
-            borderColor: 'green',
-            backgroundColor: 'rgba(0,128,0,0.2)',
-            fill: true,
-            pointRadius: 0,
-            borderWidth: 2,
-            tension: 0.3
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: {
-              type: 'linear',
-              title: {
-                display: true,
-                text: 'x'
-              }
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'f(x)'
-              }
-            }
-          },
-          plugins: {
-            legend: { display: true },
-            tooltip: {
-              callbacks: {
-                label: ctx => `f(${ctx.parsed.x.toFixed(3)}) = ${ctx.parsed.y.toFixed(3)}`
-              }
-            }
-          }
-        }
-      });
+    if (!exprStr) {
+      mensajeDiv.textContent = '⚠️ Por favor ingresa una función.';
+      return;
     }
-  </script>
+    if (isNaN(a) || isNaN(b)) {
+      mensajeDiv.textContent = '⚠️ Ingresa valores numéricos válidos para el intervalo.';
+      return;
+    }
+    if (a >= b) {
+      mensajeDiv.textContent = '⚠️ El valor "desde (a)" debe ser menor que "hasta (b)".';
+      return;
+    }
+
+    // Preparar expresión para math.js (reemplazar ^ por **)
+    const exprMath = exprStr.replace(/\^/g, '**');
+
+    let expr;
+    try {
+      expr = math.parse(exprMath);
+    } catch (e) {
+      mensajeDiv.textContent = '⚠️ Error en la función: ' + e.message;
+      return;
+    }
+
+    let f;
+    try {
+      f = expr.compile();
+    } catch (e) {
+      mensajeDiv.textContent = '⚠️ No se pudo compilar la función: ' + e.message;
+      return;
+    }
+
+    const paso = (b - a) / 500;
+    const xs = [];
+    const ys = [];
+    const puntosNoDefinidos = [];
+
+    for (let x = a; x <= b; x += paso) {
+      try {
+        const y = f.evaluate({ x });
+        if (typeof y !== 'number' || !isFinite(y)) {
+          puntosNoDefinidos.push(x);
+          continue;
+        }
+        xs.push(x);
+        ys.push(y);
+      } catch {
+        puntosNoDefinidos.push(x);
+      }
+    }
+
+    if (ys.length === 0) {
+      mensajeDiv.textContent = '⚠️ La función no está definida en ningún punto del intervalo.';
+      return;
+    }
+
+    const yMin = Math.min(...ys);
+    const yMax = Math.max(...ys);
+
+    mensajeDiv.innerHTML = `
+      <span style="color:#4ac1ff;">Dominio aproximado:</span> [${a.toFixed(2)}, ${b.toFixed(2)}]<br>
+      <span style="color:#4ac1ff;">Rango aproximado:</span> [${yMin.toFixed(3)}, ${yMax.toFixed(3)}]
+    `;
+
+    const data = [{
+      x: xs,
+      y: ys,
+      mode: 'lines',
+      line: { color: '#00e676', width: 3 },
+      name: `f(x) = ${exprStr}`
+    }];
+
+    const layout = {
+      paper_bgcolor: '#142a4a',
+      plot_bgcolor: '#0b1d3a',
+      font: { color: '#a0d8f7' },
+      title: { text: 'Gráfica de la función', font: { size: 22 } },
+      xaxis: {
+        title: 'x',
+        zeroline: true,
+        gridcolor: '#2a4a7a',
+        zerolinecolor: '#4ac1ff',
+        zerolinewidth: 2
+      },
+      yaxis: {
+        title: 'f(x)',
+        gridcolor: '#2a4a7a',
+        zerolinecolor: '#4ac1ff',
+        zerolinewidth: 2
+      },
+      margin: { t: 50, b: 50, l: 60, r: 30 },
+      hovermode: 'closest'
+    };
+
+    Plotly.newPlot(graficaDiv, data, layout, { responsive: true });
+  }
+
+  // Graficar al cargar la página
+  window.onload = graficarFuncion;
+</script>
 
 </body>
 </html>
