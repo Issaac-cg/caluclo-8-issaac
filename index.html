@@ -2,41 +2,37 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<title>Dominio y Rango con Gráfica</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Gráfica y Dominio/Rango de Funciones</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
-  label, input, button { display: block; margin: 10px 0; }
-  #result { margin-top: 20px; font-weight: bold; }
-  canvas { background: white; border: 1px solid #ccc; }
+  body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; }
+  label, input, select, button { margin: 8px 0; display: block; }
+  #plot { width: 700px; height: 500px; margin-top: 20px; }
+  #result { margin-top: 15px; font-weight: bold; }
 </style>
 </head>
 <body>
-<h2>Calculadora de Dominio y Rango (Funciones Lineales y Cuadráticas)</h2>
-<form id="funcForm">
+<h2>Graficador de Funciones con Dominio y Rango</h2>
+<form id="form">
   <label>Tipo de función:
     <select id="tipoFunc">
       <option value="lineal">Lineal (y = mx + b)</option>
       <option value="cuadratica">Cuadrática (y = ax² + bx + c)</option>
     </select>
   </label>
-  <label>Coeficiente a (para cuadrática, o pendiente m para lineal): <input type="number" id="a" value="1" step="any" required></label>
+  <label>Coeficiente a (pendiente o cuadrático): <input type="number" id="a" value="1" step="any" required></label>
   <label>Coeficiente b: <input type="number" id="b" value="0" step="any" required></label>
   <label>Coeficiente c (solo para cuadrática): <input type="number" id="c" value="0" step="any"></label>
-  <label>Rango de x (mínimo): <input type="number" id="xMin" value="-10" step="any" required></label>
-  <label>Rango de x (máximo): <input type="number" id="xMax" value="10" step="any" required></label>
-  <button type="submit">Calcular y Graficar</button>
+  <label>Intervalo de x mínimo: <input type="number" id="xMin" value="-10" step="any" required></label>
+  <label>Intervalo de x máximo: <input type="number" id="xMax" value="10" step="any" required></label>
+  <button type="submit">Graficar</button>
 </form>
 
 <div id="result"></div>
-<canvas id="grafica" width="600" height="400"></canvas>
+<div id="plot"></div>
 
 <script>
-const form = document.getElementById('funcForm');
-const ctx = document.getElementById('grafica').getContext('2d');
-let chart;
-
-form.addEventListener('submit', e => {
+document.getElementById('form').addEventListener('submit', function(e){
   e.preventDefault();
   const tipo = document.getElementById('tipoFunc').value;
   const a = parseFloat(document.getElementById('a').value);
@@ -50,57 +46,49 @@ form.addEventListener('submit', e => {
     return;
   }
 
-  // Generar valores de x y y
-  const xVals = [];
-  const yVals = [];
-  const step = (xMax - xMin) / 200;
-  for(let x = xMin; x <= xMax; x += step) {
-    xVals.push(x.toFixed(2));
+  const n = 500;
+  const xValues = [];
+  const yValues = [];
+  const step = (xMax - xMin) / n;
+
+  for(let i = 0; i <= n; i++) {
+    let x = xMin + step * i;
+    xValues.push(x);
     let y;
-    if (tipo === 'lineal') {
+    if(tipo === 'lineal') {
       y = a * x + b;
     } else {
       y = a * x * x + b * x + c;
     }
-    yVals.push(y);
+    yValues.push(y);
   }
 
-  // Calcular dominio y rango
-  const dominio = `Dominio: [${xMin}, ${xMax}]`;
-  const yMin = Math.min(...yVals);
-  const yMax = Math.max(...yVals);
-  const rango = `Rango aproximado: [${yMin.toFixed(2)}, ${yMax.toFixed(2)}]`;
+  // Calcular rango aproximado
+  const yMin = Math.min(...yValues);
+  const yMax = Math.max(...yValues);
 
-  document.getElementById('result').innerHTML = `${dominio}<br>${rango}`;
+  // Mostrar dominio y rango
+  document.getElementById('result').innerHTML = 
+    `<p>Dominio: [${xMin}, ${xMax}]</p>` +
+    `<p>Rango aproximado: [${yMin.toFixed(3)}, ${yMax.toFixed(3)}]</p>`;
 
-  // Graficar con Chart.js
-  if(chart) chart.destroy();
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: xVals,
-      datasets: [{
-        label: 'y',
-        data: yVals,
-        borderColor: 'blue',
-        borderWidth: 2,
-        fill: false,
-        pointRadius: 0,
-        tension: 0.2
-      }]
-    },
-    options: {
-      responsive: false,
-      scales: {
-        x: {
-          title: { display: true, text: 'x' }
-        },
-        y: {
-          title: { display: true, text: 'y' }
-        }
-      }
-    }
-  });
+  // Graficar con Plotly
+  const trace = {
+    x: xValues,
+    y: yValues,
+    mode: 'lines',
+    name: 'Función',
+    line: {color: 'blue'}
+  };
+
+  const layout = {
+    title: 'Gráfica de la función',
+    xaxis: {title: 'x'},
+    yaxis: {title: 'y'},
+    margin: {t: 40, b: 40, l: 50, r: 20}
+  };
+
+  Plotly.newPlot('plot', [trace], layout);
 });
 </script>
 </body>
