@@ -2,158 +2,164 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Calculadora de Funciones con Canvas</title>
-  <script src="https://cdn.jsdelivr.net/npm/mathjs@12.4.1/lib/browser/math.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de Dominio y Rango</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
   <style>
     body {
-      font-family: 'Courier New', monospace;
-      background: #f0f0f8;
-      color: #222;
-      padding: 25px;
-      max-width: 700px;
-      margin: auto;
+      font-family: Arial, sans-serif;
+      margin: 2em;
+      background: #f0f0f0;
     }
     h1 {
-      text-align: center;
-      color: #4a4a8a;
+      color: #333;
     }
     label {
       display: block;
-      margin-top: 15px;
+      margin-top: 1em;
       font-weight: bold;
-      color: #333366;
     }
-    input[type=text], input[type=number] {
+    input, button {
+      padding: 0.5em;
+      font-size: 1em;
+      margin-top: 0.3em;
       width: 100%;
-      padding: 8px;
-      font-size: 1.1em;
-      border: 2px solid #8888cc;
-      border-radius: 5px;
+      max-width: 300px;
       box-sizing: border-box;
-      margin-top: 5px;
     }
     button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 12px;
-      font-size: 1.2em;
-      background-color: #5555aa;
+      margin-top: 1.5em;
+      background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
     button:hover {
-      background-color: #333377;
+      background-color: #0056b3;
     }
-    #canvasContainer {
-      margin-top: 30px;
-      text-align: center;
+    #resultado {
+      margin-top: 2em;
+      padding: 1em;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      max-width: 500px;
     }
-    canvas {
-      border: 2px solid #444477;
-      background-color: #fff;
-      border-radius: 10px;
-    }
-    #info {
-      margin-top: 20px;
-      font-size: 1.1em;
-      color: #222244;
-      text-align: center;
+    .error {
+      color: red;
       font-weight: bold;
-    }
-    #error {
-      color: darkred;
-      font-weight: bold;
-      margin-top: 15px;
-      text-align: center;
     }
   </style>
 </head>
 <body>
 
-<h1>Calculadora de Funciones y Gráfica</h1>
+  <h1>Calculadora de Dominio y Rango</h1>
 
-<label for="funcion">Introduce la función f(x):</label>
-<input type="text" id="funcion" placeholder="Ejemplo: sin(x) + x^2" value="sin(x) + x^2">
+  <label for="funcion">Función f(x):</label>
+  <input type="text" id="funcion" placeholder="Ejemplo: sin(x), x^2, 1/(x-2)" />
 
-<label for="xmin">Dominio desde (mínimo x):</label>
-<input type="number" id="xmin" value="-10" step="any">
+  <label for="a">Punto a (inicio del intervalo):</label>
+  <input type="number" id="a" placeholder="Ejemplo: -5" />
 
-<label for="xmax">Dominio hasta (máximo x):</label>
-<input type="number" id="xmax" value="10" step="any">
+  <label for="b">Punto b (fin del intervalo):</label>
+  <input type="number" id="b" placeholder="Ejemplo: 5" />
 
-<button id="btnGraficar">Calcular y Graficar</button>
+  <button onclick="calcularDominioYRango()">Calcular Dominio y Rango</button>
 
-<div id="error"></div>
-<div id="info"></div>
+  <div id="resultado"></div>
 
-<div id="canvasContainer">
-  <canvas id="grafica" width="650" height="400"></canvas>
-</div>
+  <script>
+    function calcularDominioYRango() {
+      const resultadoDiv = document.getElementById('resultado');
+      resultadoDiv.innerHTML = '';
+      const funcStr = document.getElementById('funcion').value.trim();
+      const a = parseFloat(document.getElementById('a').value);
+      const b = parseFloat(document.getElementById('b').value);
 
-<script>
-  const canvas = document.getElementById('grafica');
-  const ctx = canvas.getContext('2d');
-  const info = document.getElementById('info');
-  const errorDiv = document.getElementById('error');
-  const btn = document.getElementById('btnGraficar');
+      if (!funcStr) {
+        resultadoDiv.innerHTML = '<p class="error">Por favor, ingresa una función.</p>';
+        return;
+      }
+      if (isNaN(a) || isNaN(b)) {
+        resultadoDiv.innerHTML = '<p class="error">Por favor, ingresa valores numéricos válidos para a y b.</p>';
+        return;
+      }
+      if (a >= b) {
+        resultadoDiv.innerHTML = '<p class="error">El punto a debe ser menor que el punto b.</p>';
+        return;
+      }
 
-  function limpiarCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
+      // Reemplazar ^ por ** para potencia (math.js soporta ambas)
+      let exprStr = funcStr.replace(/\^/g, '**');
 
-  function dibujarEjes(xmin, xmax, ymin, ymax) {
-    ctx.strokeStyle = '#444477';
-    ctx.lineWidth = 1;
-    ctx.font = '12px monospace';
-    ctx.fillStyle = '#444477';
+      let expr;
+      try {
+        expr = math.parse(exprStr);
+      } catch (e) {
+        resultadoDiv.innerHTML = '<p class="error">Función inválida: ' + e.message + '</p>';
+        return;
+      }
 
-    // Eje X
-    const y0 = mapY(0, ymin, ymax);
-    ctx.beginPath();
-    ctx.moveTo(0, y0);
-    ctx.lineTo(canvas.width, y0);
-    ctx.stroke();
+      // Crear función evaluable
+      let f;
+      try {
+        f = expr.compile();
+      } catch (e) {
+        resultadoDiv.innerHTML = '<p class="error">Error al compilar la función: ' + e.message + '</p>';
+        return;
+      }
 
-    // Eje Y
-    const x0 = mapX(0, xmin, xmax);
-    ctx.beginPath();
-    ctx.moveTo(x0, 0);
-    ctx.lineTo(x0, canvas.height);
-    ctx.stroke();
+      // Evaluar la función en puntos del intervalo para encontrar rango y detectar dominio
+      const pasos = 1000; // número de puntos para muestrear
+      const paso = (b - a) / pasos;
+      let valores = [];
+      let dominioValido = true;
+      let puntosNoDefinidos = [];
 
-    // Marcas en eje X
-    const xRange = xmax - xmin;
-    const xStep = calcularPaso(xRange);
-    for(let x = Math.ceil(xmin/xStep)*xStep; x <= xmax; x += xStep) {
-      const px = mapX(x, xmin, xmax);
-      ctx.beginPath();
-      ctx.moveTo(px, y0 - 5);
-      ctx.lineTo(px, y0 + 5);
-      ctx.stroke();
-      ctx.fillText(x.toFixed(2), px - 10, y0 + 18);
+      for (let i = 0; i <= pasos; i++) {
+        let x = a + i * paso;
+        let scope = { x: x };
+        let y;
+        try {
+          y = f.evaluate(scope);
+          if (typeof y !== 'number' || !isFinite(y)) {
+            // No está definido en este punto
+            puntosNoDefinidos.push(x);
+            continue;
+          }
+          valores.push(y);
+        } catch (e) {
+          puntosNoDefinidos.push(x);
+          continue;
+        }
+      }
+
+      // Dominio: intervalo [a,b] excluyendo puntos donde la función no está definida
+      let dominioTexto;
+      if (puntosNoDefinidos.length === 0) {
+        dominioTexto = `[${a}, ${b}]`;
+      } else {
+        // Mostrar dominio con exclusiones
+        dominioTexto = `Intervalo [${a}, ${b}] excluyendo puntos donde la función no está definida (aproximado):<br>`;
+        dominioTexto += puntosNoDefinidos.map(x => x.toFixed(4)).join(', ');
+      }
+
+      if (valores.length === 0) {
+        resultadoDiv.innerHTML = '<p class="error">La función no está definida en ningún punto del intervalo dado.</p>';
+        return;
+      }
+
+      // Calcular rango aproximado
+      const minY = Math.min(...valores);
+      const maxY = Math.max(...valores);
+
+      resultadoDiv.innerHTML = `
+        <h2>Resultados</h2>
+        <p><strong>Dominio aproximado:</strong> ${dominioTexto}</p>
+        <p><strong>Rango aproximado:</strong> [${minY.toFixed(4)}, ${maxY.toFixed(4)}]</p>
+      `;
     }
+  </script>
 
-    // Marcas en eje Y
-    const yRange = ymax - ymin;
-    const yStep = calcularPaso(yRange);
-    for(let y = Math.ceil(ymin/yStep)*yStep; y <= ymax; y += yStep) {
-      const py = mapY(y, ymin, ymax);
-      ctx.beginPath();
-      ctx.moveTo(x0 - 5, py);
-      ctx.lineTo(x0 + 5, py);
-      ctx.stroke();
-      if (Math.abs(y) > 1e-6) ctx.fillText(y.toFixed(2), x0 + 8, py + 4);
-    }
-  }
-
-  function calcularPaso(rango) {
-    // Escoge un paso "bonito" para las marcas del eje
-    const base = Math.pow(10, Math.floor(Math.log10(rango)) - 1);
-    if (rango / base < 5) return base / 2;
-    return base;
-  }
-
-  function
+</body>
+</html>
