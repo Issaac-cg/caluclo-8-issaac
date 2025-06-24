@@ -2,94 +2,108 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<title>Gráfica y Dominio/Rango de Funciones</title>
+<title>Dominio, Rango y Gráfica de Funciones</title>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; }
-  label, input, select, button { margin: 8px 0; display: block; }
-  #plot { width: 700px; height: 500px; margin-top: 20px; }
-  #result { margin-top: 15px; font-weight: bold; }
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  label { display: block; margin-top: 10px; }
+  input, button { padding: 5px; font-size: 1em; }
+  #graph { width: 600px; height: 400px; margin-top: 20px; }
 </style>
 </head>
 <body>
-<h2>Graficador de Funciones con Dominio y Rango</h2>
-<form id="form">
-  <label>Tipo de función:
-    <select id="tipoFunc">
-      <option value="lineal">Lineal (y = mx + b)</option>
-      <option value="cuadratica">Cuadrática (y = ax² + bx + c)</option>
-    </select>
-  </label>
-  <label>Coeficiente a (pendiente o cuadrático): <input type="number" id="a" value="1" step="any" required></label>
-  <label>Coeficiente b: <input type="number" id="b" value="0" step="any" required></label>
-  <label>Coeficiente c (solo para cuadrática): <input type="number" id="c" value="0" step="any"></label>
-  <label>Intervalo de x mínimo: <input type="number" id="xMin" value="-10" step="any" required></label>
-  <label>Intervalo de x máximo: <input type="number" id="xMax" value="10" step="any" required></label>
-  <button type="submit">Graficar</button>
+
+<h2>Calcula dominio, rango y grafica una función</h2>
+
+<form id="funcForm">
+  <label>Función f(x) (ejemplo: x*x, Math.sin(x), x**3 - 2*x):</label>
+  <input type="text" id="funcInput" size="40" value="x*x" required />
+  
+  <label>Intervalo de x (mínimo):</label>
+  <input type="number" id="xMin" value="-10" required />
+  
+  <label>Intervalo de x (máximo):</label>
+  <input type="number" id="xMax" value="10" required />
+  
+  <button type="submit">Calcular y Graficar</button>
 </form>
 
 <div id="result"></div>
-<div id="plot"></div>
+<div id="graph"></div>
 
 <script>
-document.getElementById('form').addEventListener('submit', function(e){
+document.getElementById('funcForm').addEventListener('submit', function(e) {
   e.preventDefault();
-  const tipo = document.getElementById('tipoFunc').value;
-  const a = parseFloat(document.getElementById('a').value);
-  const b = parseFloat(document.getElementById('b').value);
-  const c = parseFloat(document.getElementById('c').value);
+
+  const funcStr = document.getElementById('funcInput').value;
   const xMin = parseFloat(document.getElementById('xMin').value);
   const xMax = parseFloat(document.getElementById('xMax').value);
 
+  // Validar intervalo
   if (xMax <= xMin) {
-    alert('El valor máximo de x debe ser mayor que el mínimo.');
+    alert('El valor máximo debe ser mayor que el mínimo.');
     return;
   }
 
-  const n = 500;
-  const xValues = [];
-  const yValues = [];
-  const step = (xMax - xMin) / n;
+  // Crear función segura usando Function constructor
+  // Solo se permite usar "x" y Math para evitar riesgos
+  let f;
+  try {
+    f = new Function('x', 'with(Math){ return ' + funcStr + '; }');
+    // Probar función con un valor
+    f(0);
+  } catch (error) {
+    alert('Función inválida. Usa sintaxis JavaScript válida, por ejemplo: x*x, Math.sin(x), x**3 - 2*x');
+    return;
+  }
 
-  for(let i = 0; i <= n; i++) {
-    let x = xMin + step * i;
-    xValues.push(x);
+  // Generar datos para graficar y calcular rango
+  const n = 500; // puntos para graficar
+  const step = (xMax - xMin) / n;
+  let xValues = [];
+  let yValues = [];
+
+  for (let i = 0; i <= n; i++) {
+    let x = xMin + i * step;
     let y;
-    if(tipo === 'lineal') {
-      y = a * x + b;
-    } else {
-      y = a * x * x + b * x + c;
+    try {
+      y = f(x);
+      if (typeof y !== 'number' || !isFinite(y)) y = NaN;
+    } catch {
+      y = NaN;
     }
+    xValues.push(x);
     yValues.push(y);
   }
 
-  // Calcular rango aproximado
-  const yMin = Math.min(...yValues);
-  const yMax = Math.max(...yValues);
+  // Filtrar valores válidos para rango
+  const yValid = yValues.filter(y => !isNaN(y));
+  const yMin = Math.min(...yValid);
+  const yMax = Math.max(...yValid);
 
   // Mostrar dominio y rango
-  document.getElementById('result').innerHTML = 
-    `<p>Dominio: [${xMin}, ${xMax}]</p>` +
-    `<p>Rango aproximado: [${yMin.toFixed(3)}, ${yMax.toFixed(3)}]</p>`;
+  const resultDiv = document.getElementById('result');
+  resultDiv.innerHTML = `<p><strong>Dominio:</strong> [${xMin}, ${xMax}]</p>
+                         <p><strong>Rango aproximado:</strong> [${yMin.toFixed(3)}, ${yMax.toFixed(3)}]</p>`;
 
   // Graficar con Plotly
   const trace = {
     x: xValues,
     y: yValues,
     mode: 'lines',
-    name: 'Función',
-    line: {color: 'blue'}
+    name: 'f(x)'
   };
 
   const layout = {
-    title: 'Gráfica de la función',
-    xaxis: {title: 'x'},
-    yaxis: {title: 'y'},
-    margin: {t: 40, b: 40, l: 50, r: 20}
+    title: 'Gráfica de f(x)',
+    xaxis: { title: 'x' },
+    yaxis: { title: 'f(x)' },
+    showlegend: true
   };
 
-  Plotly.newPlot('plot', [trace], layout);
+  Plotly.newPlot('graph', [trace], layout);
 });
 </script>
+
 </body>
 </html>
